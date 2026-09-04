@@ -16,3 +16,31 @@ services:
       - USERS_SERVICE_URL=http://users-service:3000
     depends_on:
       - users-service
+
+  booking-service:
+    build: ./booking-service
+    ports:
+      - "3002:3002"
+    env_file:
+      - ./booking-service/.env
+    environment:
+      - USERS_SERVICE_URL=http://users-service:3000
+      - CLASSES_SERVICE_URL=http://classes-service:3001
+    depends_on:
+      - users-service
+      - classes-service
+
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./gateway/.env
+    environment:
+      - USERS_SERVICE_URL=http://users-service:3000
+      - CLASSES_SERVICE_URL=http://classes-service:3001
+      - BOOKING_SERVICE_URL=http://booking-service:3002
+    depends_on:
+      - users-service
+      - classes-service
+      - booking-service
