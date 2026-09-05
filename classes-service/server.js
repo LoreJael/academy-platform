@@ -145,15 +145,23 @@ app.put("/classes/:id", async (req, res) => {
 
     if (professor_id) {
         const respuestaUsuario = await fetch(`${process.env.USERS_SERVICE_URL}/users/${professor_id}`);
-
         if (!respuestaUsuario.ok) {
             return res.status(400).json({ mensaje: "El profesor indicado no existe" });
         }
-
         const usuario = await respuestaUsuario.json();
-
         if (usuario.role !== "PROFESOR") {
             return res.status(400).json({ mensaje: "El usuario indicado no tiene rol de profesor" });
+        }
+    }
+
+    if (capacity !== undefined) {
+        const respuestaReservas = await fetch(`${process.env.BOOKING_SERVICE_URL}/bookings?classId=${id}`);
+        if (respuestaReservas.ok) {
+            const reservas = await respuestaReservas.json();
+            const reservasActivas = reservas.filter(r => r.status === "active");
+            if (capacity < reservasActivas.length) {
+                return res.status(409).json({ mensaje: `No se puede bajar el cupo por debajo de las ${reservasActivas.length} reservas activas` });
+            }
         }
     }
 
@@ -163,7 +171,7 @@ app.put("/classes/:id", async (req, res) => {
     if (day_of_week) camposActualizados.day_of_week = day_of_week;
     if (start_time) camposActualizados.start_time = start_time;
     if (duration_minutes) camposActualizados.duration_minutes = duration_minutes;
-    if (capacity) camposActualizados.capacity = capacity;
+    if (capacity !== undefined) camposActualizados.capacity = capacity;
 
     const { data, error } = await supabase
         .from("classes")
@@ -181,6 +189,15 @@ app.put("/classes/:id", async (req, res) => {
 
 app.delete("/classes/:id", async (req, res) => {
     const { id } = req.params;
+
+    const respuestaReservas = await fetch(`${process.env.BOOKING_SERVICE_URL}/bookings?classId=${id}`);
+    if (respuestaReservas.ok) {
+        const reservas = await respuestaReservas.json();
+        const reservasActivas = reservas.filter(r => r.status === "active");
+        if (reservasActivas.length > 0) {
+            return res.status(409).json({ mensaje: "No se puede eliminar una clase con reservas activas" });
+        }
+    }
 
     const { error } = await supabase
         .from("classes")

@@ -14,8 +14,12 @@ services:
       - ./classes-service/.env
     environment:
       - USERS_SERVICE_URL=http://users-service:3000
+      - BOOKING_SERVICE_URL=http://booking-service:3002
     depends_on:
       - users-service
+     
+
+    
 
   booking-service:
     build: ./booking-service
