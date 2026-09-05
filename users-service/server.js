@@ -1,4 +1,5 @@
 const express = require("express");
+const { createClient } = require("@supabase/supabase-js");
 
 const supabase = require("./supabaseClient");
 
@@ -145,7 +146,18 @@ app.post("/auth/register", async (req, res) => {
 app.post("/auth/login", async (req, res) => {
     const { email, password } = req.body;
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const authClient = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
+        {
+            auth: {
+                autoRefreshToken: false,
+                persistSession: false,
+            },
+        }
+    );
+
+    const { data, error } = await authClient.auth.signInWithPassword({
         email,
         password
     });
